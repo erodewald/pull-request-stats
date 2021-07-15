@@ -1,3 +1,4 @@
+const core = require('@actions/core');
 const { fetchPullRequests } = require('../fetchers');
 const { parsePullRequest } = require('../parsers');
 
@@ -14,7 +15,11 @@ const buildQuery = ({ org, repos, startDate }) => {
 const getPullRequests = async (params) => {
   const { limit } = params;
   const data = await fetchPullRequests(params);
+  core.debug(`getPullRequests() data: ${JSON.stringify(data)}`);
   const results = data.search.edges.map(parsePullRequest);
+  if (results && results.length > 0) {
+    core.debug(`getPullRequests() results: ${JSON.stringify(results)}`);
+  }
   if (results.length < limit) return results;
 
   const last = results[results.length - 1].cursor;
@@ -29,5 +34,6 @@ module.exports = ({
   itemsPerPage = 100,
 }) => {
   const search = buildQuery({ org, repos, startDate });
+  core.debug(`getPullRequests(${search})`);
   return getPullRequests({ octokit, search, limit: itemsPerPage });
 };

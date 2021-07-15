@@ -26,8 +26,9 @@ const run = async (params) => {
     pullRequestId,
   } = params;
   core.debug(`Params: ${JSON.stringify(params, null, 2)}`);
-
-  const octokit = github.getOctokit(githubToken);
+  
+  const octokit = github.getOctokit(githubToken, {baseUrl: process.env.GITHUB_API_URL});
+  core.debug(`Created oktokit.js with ${process.env.GITHUB_API_URL}`);
 
   const pullRequest = await getPullRequest({ octokit, pullRequestId });
   if (alreadyPublished(pullRequest)) {

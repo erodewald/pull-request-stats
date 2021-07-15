@@ -8921,6 +8921,7 @@ module.exports = ({
 /***/ 591:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
+const core = __webpack_require__(470);
 const { fetchPullRequests } = __webpack_require__(162);
 const { parsePullRequest } = __webpack_require__(120);
 
@@ -8937,7 +8938,11 @@ const buildQuery = ({ org, repos, startDate }) => {
 const getPullRequests = async (params) => {
   const { limit } = params;
   const data = await fetchPullRequests(params);
+  core.debug(`getPullRequests() data: ${JSON.stringify(data)}`);
   const results = data.search.edges.map(parsePullRequest);
+  if (results && results.length > 0) {
+    core.debug(`getPullRequests() results: ${JSON.stringify(results)}`);
+  }
   if (results.length < limit) return results;
 
   const last = results[results.length - 1].cursor;
@@ -8952,6 +8957,7 @@ module.exports = ({
   itemsPerPage = 100,
 }) => {
   const search = buildQuery({ org, repos, startDate });
+  core.debug(`getPullRequests(${search})`);
   return getPullRequests({ octokit, search, limit: itemsPerPage });
 };
 
@@ -8959,8 +8965,9 @@ module.exports = ({
 /***/ }),
 
 /***/ 593:
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
+const core = __webpack_require__(470);
 const PRS_QUERY = `
 query($search: String!, $limit: Int!, $after: String) {
   search(query: $search, first: $limit, after: $after, type: ISSUE) {
@@ -9005,6 +9012,7 @@ module.exports = ({
     .graphql(PRS_QUERY, variables)
     .catch((error) => {
       const msg = `Error fetching pull requests with variables "${JSON.stringify(variables)}"`;
+      core.error(`${msg}. Error: ${error}`);
       throw new Error(`${msg}. Error: ${error}`);
     });
 };
@@ -9195,8 +9203,9 @@ const run = async (params) => {
     pullRequestId,
   } = params;
   core.debug(`Params: ${JSON.stringify(params, null, 2)}`);
-
-  const octokit = github.getOctokit(githubToken);
+  
+  const octokit = github.getOctokit(githubToken, {baseUrl: process.env.GITHUB_API_URL});
+  core.debug(`Created oktokit.js with ${process.env.GITHUB_API_URL}`);
 
   const pullRequest = await getPullRequest({ octokit, pullRequestId });
   if (alreadyPublished(pullRequest)) {
